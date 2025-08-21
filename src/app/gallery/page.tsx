@@ -4,6 +4,7 @@ import GalleryClient from '@/components/GalleryClient'
 // Force dynamic runtime for this page (avoid prerender errors)
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
+export const runtime = 'nodejs'
 
 function GalleryFallback() {
   return (

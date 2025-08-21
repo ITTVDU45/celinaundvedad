@@ -14,13 +14,26 @@ export async function GET(request: NextRequest) {
     }
 
     // Lade alle Dateien des Benutzers
-    const files = await listUserFiles(userName)
+    let files: Array<{ name: string; size: number; lastModified: Date; isChallenge: boolean; challengeId?: string }> = []
+    try {
+      files = await listUserFiles(userName)
+    } catch (err) {
+      console.error('MinIO Zugriff fehlgeschlagen beim Auflisten der Dateien:', err)
+      // Gib eine leere Liste zurück statt Fehler, damit Build/Prerender nicht scheitert
+      return NextResponse.json({ files: [], message: 'MinIO nicht konfiguriert oder Fehler beim Zugriff' })
+    }
 
     // Formatiere die Dateien für die Frontend-Anzeige
     const formattedFiles = await Promise.all(
       files.map(async (file) => {
         // Generiere Presigned Download-URL für die Anzeige
-        const downloadUrl = await generatePresignedDownloadUrl(file.name)
+        let downloadUrl = ''
+        try {
+          downloadUrl = await generatePresignedDownloadUrl(file.name)
+        } catch (err) {
+          console.error('Fehler beim Generieren der Presigned URL für', file.name, err)
+          downloadUrl = ''
+        }
         
         return {
           id: file.name,
@@ -29,7 +42,7 @@ export async function GET(request: NextRequest) {
           size: file.size,
           uploadDate: file.lastModified.toISOString(),
           userName: userName,
-          preview: downloadUrl, // Verwende die echte Presigned Download-URL
+          preview: downloadUrl, // Verwende die echte Presigned Download-URL oder leer
           status: 'success' as const,
           progress: 100,
           isChallenge: file.isChallenge,
