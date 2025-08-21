@@ -38,18 +38,10 @@ export default function GalleryPage() {
 
   // Lade gespeicherte Daten beim Start
   useEffect(() => {
-    // Hole den Benutzernamen aus der URL oder localStorage
+    // Hole den Benutzernamen aus der URL
     const name = searchParams.get('name')
     if (name) {
       setUserName(name)
-      // Speichere den Namen im localStorage für Challenges-Status
-      localStorage.setItem('userName', name)
-    } else {
-      // Fallback: Versuche den Namen aus dem localStorage zu holen
-      const storedName = localStorage.getItem('userName')
-      if (storedName) {
-        setUserName(storedName)
-      }
     }
   }, [searchParams])
 
@@ -60,24 +52,10 @@ export default function GalleryPage() {
     // Lade Fotos aus MinIO
     loadUserFiles()
 
-    // Lade abgeschlossene Challenges aus localStorage (bleibt für Challenge-Status)
-    const storedCompletedChallenges = localStorage.getItem(`completedChallenges_${userName}`)
-    if (storedCompletedChallenges) {
-      try {
-        const parsed = JSON.parse(storedCompletedChallenges)
-        setCompletedChallenges(parsed)
-      } catch (error) {
-        console.error('Fehler beim Laden der abgeschlossenen Challenges:', error)
-      }
-    }
+    // Lade abgeschlossene Challenges aus der API (später implementieren)
+    // Für jetzt: Leeres Array
+    setCompletedChallenges([])
   }, [userName])
-
-  // Speichere abgeschlossene Challenges (bleibt im localStorage)
-  useEffect(() => {
-    if (completedChallenges.length > 0 && userName) {
-      localStorage.setItem(`completedChallenges_${userName}`, JSON.stringify(completedChallenges))
-    }
-  }, [completedChallenges, userName])
 
   // Lade Dateien aus MinIO
   const loadUserFiles = async () => {
@@ -95,9 +73,13 @@ export default function GalleryPage() {
         console.error('Fehler beim Laden der Dateien:', response.statusText)
         const errorData = await response.json()
         console.error('Fehler-Details:', errorData)
+        // Fallback: Leeres Array bei API-Fehlern
+        setUploadedFiles([])
       }
     } catch (error) {
       console.error('Fehler beim Laden der Dateien:', error)
+      // Fallback: Leeres Array bei Netzwerk-Fehlern
+      setUploadedFiles([])
     } finally {
       setIsLoading(false)
     }
@@ -240,6 +222,7 @@ export default function GalleryPage() {
           // Markiere die Challenge als abgeschlossen
           if (!completedChallenges.includes(challengeId)) {
             setCompletedChallenges((prev: string[]) => [...prev, challengeId])
+            // TODO: Später in MinIO oder separate API speichern
           }
         }
       }
@@ -313,15 +296,15 @@ export default function GalleryPage() {
   // Wenn kein Benutzername vorhanden ist, zeige eine Nachricht
   if (!userName) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-amber-50 via-amber-100 to-amber-200 flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">
             Benutzername nicht gefunden
           </h2>
           <p className="text-gray-600 mb-6">
-            Bitte gib zuerst deinen Namen auf der Startseite ein.
+            Bitte gehe zurück zur Startseite und gib deinen Namen ein.
           </p>
-          <Link
+          <Link 
             href="/"
             className="bg-gradient-to-r from-[#C9AD7F] to-[#A67C5B] hover:from-[#B89A6E] hover:to-[#956B4F] text-white font-semibold px-6 py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105"
           >

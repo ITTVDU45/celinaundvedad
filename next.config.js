@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // React Compiler deaktiviert für bessere Kompatibilität
-  
   // Bilder von MinIO erlauben
   images: {
     remotePatterns: [
@@ -12,6 +11,12 @@ const nextConfig = {
         pathname: '/celinaundvedad/**',
       },
     ],
+  },
+  // Statisches Rendering für Vercel
+  output: 'standalone',
+  // Deaktiviere automatisches Prerendering für dynamische Routen
+  experimental: {
+    appDir: true,
   },
 }
 
