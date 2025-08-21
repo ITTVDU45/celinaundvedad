@@ -10,10 +10,5 @@
       "maxDuration": 30
     }
   },
-  "build": {
-    "env": {
-      "NEXT_PUBLIC_MINIO_ENDPOINT": "@minio-endpoint",
-      "NEXT_PUBLIC_MINIO_BUCKET": "@minio-bucket"
-    }
-  }
+  
 }
