@@ -1,0 +1,309 @@
+Klingt super – „Hochzeits-Fotowand“ als kleine Next.js-App mit Upload nach MinIO.
+Hier ist eine kompakte, umsetzbare **Roadmap inkl. *Cursor Rules*** (copy-paste-fähig), damit Cursor dir den Code genau so erzeugt, wie du ihn brauchst.
+
+---
+
+# 1) Projektziele (für die Rules)
+
+* One-pager: oben **Hero-Banner**, darunter **Bilder-Upload** (Smartphone-Galerie), Grid mit Previews & Upload-Status.
+* Uploads direkt in **MinIO** (S3-kompatibel) via **presigned URL**.
+* Keine Registrierung; optional 4-stelliger Event-Code als „Soft-Gate“.
+* Sauber: TypeScript, Next.js 15 (App Router), React 19, Tailwind CSS, Edge-fähige API minimal.
+
+---
+
+# 2) Tech-Stack & Packages
+
+* **Next.js 15** (App Router, Server Actions erlaubt)
+* **React 19**
+* **Tailwind CSS**
+* **@aws-sdk/client-s3** & **@aws-sdk/s3-request-presigner** (für MinIO, presigned PUT)
+* optional: **zod** (Validation), **react-hook-form** (Form UX), **upload progress** via `XMLHttpRequest` oder `fetch` + `ReadableStream`.
+
+Install (Richtwert):
+
+```bash
+pnpm dlx create-next-app@latest hochzeit-wall --ts --app --eslint --tailwind
+cd hochzeit-wall
+pnpm add @aws-sdk/client-s3 @aws-sdk/s3-request-presigner zod react-hook-form
+```
+
+---
+
+# 3) ENV & MinIO (für die Rules)
+
+`.env.local` (nur Server):
+
+```
+MINIO_ENDPOINT=http://localhost:9000
+MINIO_REGION=us-east-1
+MINIO_ACCESS_KEY=xxxxx
+MINIO_SECRET_KEY=yyyyy
+MINIO_BUCKET=hochzeit-fotos
+UPLOAD_MAX_MB=25
+UPLOAD_ALLOWED_MIME=image/jpeg,image/png,image/heic,image/heif
+EVENT_CODE=2025
+```
+
+**MinIO CORS** (ersetze Origin mit deiner Domain):
+
+```json
+[
+  {
+    "AllowedOrigin": ["https://deine-domain.tld", "http://localhost:3000"],
+    "AllowedMethod": ["PUT", "POST", "GET"],
+    "AllowedHeader": ["*"],
+    "ExposeHeader": ["ETag", "Location"],
+    "MaxAgeSeconds": 3000
+  }
+]
+```
+
+**Bucket-Policy** (privat; nur presigned erlaubt):
+
+```json
+{
+  "Version":"2012-10-17",
+  "Statement":[
+    {
+      "Effect":"Deny",
+      "Principal":"*",
+      "Action":"s3:*",
+      "Resource":[
+        "arn:aws:s3:::hochzeit-fotos",
+        "arn:aws:s3:::hochzeit-fotos/*"
+      ],
+      "Condition":{"Bool":{"aws:SecureTransport":"false"}}
+    }
+  ]
+}
+```
+
+---
+
+# 4) Datei- & Ordnerstruktur (für die Rules)
+
+```
+app/
+  layout.tsx
+  page.tsx                     // Hero + Upload
+  api/
+    upload/route.ts            // presigned URL (POST)
+  gallery/route.ts             // (optional) list objects signed (GET)
+components/
+  Banner.tsx
+  UploadBox.tsx
+  ProgressItem.tsx
+lib/
+  s3.ts                        // S3Client factory for MinIO
+  mime.ts                      // allowlist, helpers
+styles/
+  globals.css
+```
+
+---
+
+# 5) Upload-Flow (für die Rules)
+
+1. Client schickt Dateiname, Typ, Größe an `/api/upload` (POST).
+2. Server prüft `MIME`, `size <= UPLOAD_MAX_MB`, generiert **presigned PUT URL** + Key (`eventId/yyyy-mm-dd/uuid.ext`).
+3. Client lädt Datei via `PUT` auf MinIO (Progress anzeigen).
+4. Optional: Thumbnails/Optimierung später per Worker.
+
+---
+
+# 6) Sicherheitsregeln (für die Rules)
+
+* ENV nur serverseitig nutzen; **nie** an Client leaken.
+* Strikte MIME/Size-Validierung (Server & Client).
+* Key normalisieren; **keine** Original-User-Pfade.
+* Rate-Limit (später): IP-Bucket oder Turnstile/Hcaptcha.
+* Optional Event-Code: einfacher 4-stelliger Code im LocalStorage.
+
+---
+
+# 7) UX-Leitplanken (für die Rules)
+
+* **Hero-Banner**: Titel des Paares, Datum, kurze Anleitung („Wähle bis zu 10 Fotos, max. 25 MB pro Bild“).
+* **UploadBox**: Button + Drag\&Drop + Capture Hint (mobile).
+* **Previews**: quadratisches Grid, Live-Progress, Retry bei Fehler.
+* **Toasts**: Erfolg/Fehler, verbleibende Limits.
+* **A11y**: Tastatur-Fokus, `aria-live` für Upload-Status.
+
+---
+
+# 8) Beispiel-Prompts für Cursor („Rules-Workflows“)
+
+> Du nutzt die Rules unten – so kannst du Cursor zielgenau steuern.
+
+**Prompt 1 – S3 Client für MinIO**
+
+> „Erstelle `lib/s3.ts` mit einem `getS3()` für MinIO (S3 kompatibel, @aws-sdk/client-s3). Nutze ENV aus `process.env`, setze `forcePathStyle:true`, Endpoint aus `MINIO_ENDPOINT`, Region aus `MINIO_REGION`. Exportiere auch eine Utility `objectKey({ext}:{ext:string})`, die `eventId` (aus `EVENT_CODE`), heutiges Datum `YYYY-MM-DD` und `crypto.randomUUID()` kombiniert.“
+
+**Prompt 2 – Presign API**
+
+> „Implementiere `app/api/upload/route.ts` (POST). Body: `{ filename, contentType, size }`. Validierung via zod und ENV-Grenzen. Erzeuge presigned PUT URL (5 Min Gültigkeit) mit `@aws-sdk/s3-request-presigner`. Antworte `{ url, key }`. Fehler mit passenden Statuscodes.“
+
+**Prompt 3 – Upload UI**
+
+> „Erstelle `components/UploadBox.tsx` mit file input (multiple), Preview, Progress. Erzeuge pro Datei `FormData` -> fetch `/api/upload` -> `PUT` via presigned URL mit Progress. Begrenze auf 10 Dateien, blockiere nicht unterstützte MIME-Types. Schreib Tests für Helper (mime, size).“
+
+**Prompt 4 – Banner**
+
+> „`components/Banner.tsx`: Full-width Bild (responsive), leichter Glas-Overlay, Titel `Fotos für Anna & Ben`, Unterzeile mit Datum, Scroll-CTA.“
+
+**Prompt 5 – Seite**
+
+> „`app/page.tsx`: importiere Banner & UploadBox. Container max-w-3xl, Tailwind-Abstände, mobile first.“
+
+**Prompt 6 – Tailwind Feinheiten**
+
+> „Passe `tailwind.config.ts` an: Container-Zentrierung, custom shadow/rounded, safelist für progress classes.“
+
+**Prompt 7 – Minimal Gallery (optional)**
+
+> „`app/gallery/route.ts` listet (serverseitig) Objekt-Keys mit Prefix `EVENT_CODE/` und gibt sie als JSON zurück. Kein Public-Read! Client nutzt temporäre presigned GET für Thumbs (später).“
+
+---
+
+# 9) **Beispiel-`.cursorrules`** (copy-paste)
+
+> Lege sie im Projekt-Root als `.cursorrules` an.
+
+```markdown
+# Cursor Rules – Hochzeit Fotowand
+
+## Stack
+- Next.js 15 (App Router), React 19, TypeScript strict.
+- Tailwind CSS für UI. Keine UI-Frameworks außer Tailwind.
+- MinIO via @aws-sdk/client-s3, presigned PUT mit @aws-sdk/s3-request-presigner.
+- Zod für Input-Validierung.
+
+## Architektur
+- One-Page: `app/page.tsx` mit Banner + Upload.
+- API: `app/api/upload/route.ts` (POST) erzeugt presigned PUT URL.
+- `lib/s3.ts` kapselt S3Client (MinIO, forcePathStyle).
+- Dateien: `EVENT_CODE/yyyy-mm-dd/uuid.ext`.
+
+## Qualität
+- TypeScript: `"strict": true`. Keine `any`.
+- Server/Client trennen: ENV bleibt serverseitig.
+- Zod-Validierung in API. Edge-kompatibel wenn möglich.
+- Keine Base64-Uploads, nur presigned PUT.
+
+## Sicherheit
+- MIME + Size strikt prüfen (Server & Client).
+- Keine Original-Dateinamen im Key.
+- Rate Limit/Turnstile als TODO markieren.
+- CORS: nur eigene Origins.
+
+## UX
+- Mobile first. Klarer CTA.
+- Drag&Drop + File Picker (accept: images/* inkl. HEIC/HEIF, wenn unterstützt).
+- Progress pro Datei, Retry bei 5xx, Toasts.
+- A11y: Fokuszustände, `aria-live` für Status.
+
+## Stil
+- Saubere Tailwind-Klassen, keine Inline-Styles außer nötig.
+- Komponenten klein: Banner, UploadBox, ProgressItem.
+
+## ENV-Kontrakte (Server only)
+- MINIO_ENDPOINT, MINIO_REGION, MINIO_ACCESS_KEY, MINIO_SECRET_KEY, MINIO_BUCKET
+- UPLOAD_MAX_MB (Default 25), UPLOAD_ALLOWED_MIME (CSV)
+- EVENT_CODE (z. B. "2025")
+
+## Was Cursor erzeugen soll
+- `lib/s3.ts` mit `getS3()` und `objectKey()` helper.
+- `app/api/upload/route.ts` mit zod, presign, Fehlercodes.
+- `components/UploadBox.tsx` mit Preview, Progress, Limitierung.
+- `components/Banner.tsx` mit Hero-Section.
+- Tailwind-konforme Seite `app/page.tsx`.
+
+## Tests (optional)
+- Unit für mime/size Helper.
+- E2E (Playwright) Happy Path: 2 Bilder, Progress, Success.
+
+## Nicht tun
+- Keine Third-Party-Upload-Dienste.
+- Keine Public-Read-Bucket-Policies.
+- Keine Speicherung von ENV im Client.
+```
+
+---
+
+# 10) Mini-Snippets (damit Cursor weiß, wie’s aussehen soll)
+
+**`lib/s3.ts`**
+
+```ts
+import { S3Client } from "@aws-sdk/client-s3";
+
+export const getS3 = () =>
+  new S3Client({
+    region: process.env.MINIO_REGION!,
+    endpoint: process.env.MINIO_ENDPOINT!,
+    credentials: {
+      accessKeyId: process.env.MINIO_ACCESS_KEY!,
+      secretAccessKey: process.env.MINIO_SECRET_KEY!,
+    },
+    forcePathStyle: true,
+  });
+
+export const objectKey = (ext: string) => {
+  const eventId = process.env.EVENT_CODE ?? "event";
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${eventId}/${yyyy}-${mm}-${dd}/${crypto.randomUUID()}.${ext}`;
+};
+```
+
+**`app/api/upload/route.ts` (Skizze)**
+
+```ts
+import { NextRequest } from "next/server";
+import { getS3, objectKey } from "@/lib/s3";
+import { PutObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+
+export async function POST(req: NextRequest) {
+  const { filename, contentType, size } = await req.json();
+  const max = Number(process.env.UPLOAD_MAX_MB ?? 25) * 1024 * 1024;
+  const allow = (process.env.UPLOAD_ALLOWED_MIME ?? "image/jpeg,image/png,image/heic,image/heif")
+    .split(",")
+    .map(s => s.trim());
+
+  if (!contentType || !allow.includes(contentType)) {
+    return Response.json({ error: "Unsupported MIME" }, { status: 415 });
+  }
+  if (!size || size > max) {
+    return Response.json({ error: "File too large" }, { status: 413 });
+  }
+
+  const ext = (filename?.split(".").pop() ?? "jpg").toLowerCase();
+  const Key = objectKey(ext);
+  const Bucket = process.env.MINIO_BUCKET!;
+  const s3 = getS3();
+
+  const cmd = new PutObjectCommand({ Bucket, Key, ContentType: contentType });
+  const url = await getSignedUrl(s3, cmd, { expiresIn: 60 * 5 });
+
+  return Response.json({ url, key: Key });
+}
+```
+
+> Den Rest (UploadBox mit Progress, Banner, Page) lässt du Cursor anhand der **Prompts & Rules** generieren.
+
+---
+
+# 11) Deployment-Hinweise
+
+* **MinIO**: CORS & Bucket vorher anlegen, Zeit auf Server korrekt (presign).
+* **Domain** in CORS eintragen.
+* Falls **Vercel**: API-Routes als Node Runtime nutzen (presign ok).
+* HTTPS sicherstellen (Mobile Uploads & iOS Safari sind wählerisch).
+
+---
+
+Wenn du willst, erstelle ich dir jetzt direkt die **fertige `.cursorrules`** Datei + die drei Kern-Dateien (`lib/s3.ts`, `api/upload`, `UploadBox.tsx`) exakt nach obigem Standard.
