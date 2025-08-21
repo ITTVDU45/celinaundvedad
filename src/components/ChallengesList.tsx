@@ -4,16 +4,18 @@ import { challenges, type Challenge } from '@/data/challenges'
 import { useState } from 'react'
 
 interface ChallengesListProps {
+  challenges?: Challenge[]
   onChallengeSelect: (challenge: Challenge) => void
   completedChallenges: string[]
 }
 
-export default function ChallengesList({ onChallengeSelect, completedChallenges }: ChallengesListProps) {
+export default function ChallengesList({ challenges: challengesProp, onChallengeSelect, completedChallenges }: ChallengesListProps) {
+  const allChallenges = challengesProp ?? challenges
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'gruppen' | 'fun' | 'aktion' | 'persoenlich' | 'selfie' | 'stimmung' | 'kreativ' | 'action' | 'highlights' | 'einzel'>('all')
 
-  const filteredChallenges = selectedCategory === 'all' 
-    ? challenges 
-    : challenges.filter(challenge => challenge.category === selectedCategory)
+  const filteredChallenges = selectedCategory === 'all'
+    ? allChallenges
+    : allChallenges.filter(challenge => challenge.category === selectedCategory)
 
   const categories = [
     { id: 'all', name: 'Alle', icon: '🎯' },
