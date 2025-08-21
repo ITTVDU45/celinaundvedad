@@ -476,7 +476,6 @@ export default function GalleryClient() {
         ) : (
           /* Challenges-Tab */
           <ChallengesList
-            challenges={[]} // Hier werden die tatsächlichen Challenges geladen
             onChallengeSelect={handleChallengeSelect}
             completedChallenges={completedChallenges}
           />
