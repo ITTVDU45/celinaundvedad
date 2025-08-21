@@ -2,6 +2,7 @@
 
 import { challenges, type Challenge } from '@/data/challenges'
 import { useState } from 'react'
+import { useEffect } from 'react'
 
 interface ChallengesListProps {
   challenges?: Challenge[]
@@ -16,6 +17,13 @@ export default function ChallengesList({ challenges: challengesProp, onChallenge
   const filteredChallenges = selectedCategory === 'all'
     ? allChallenges
     : allChallenges.filter(challenge => challenge.category === selectedCategory)
+
+  useEffect(() => {
+    // Debug: Log counts so we can see if challenges are available at runtime
+    // Entfernen, sobald das Problem gefixt ist
+    // eslint-disable-next-line no-console
+    console.log('ChallengesList: all=', allChallenges.length, 'filtered=', filteredChallenges.length, 'selectedCategory=', selectedCategory)
+  }, [allChallenges, filteredChallenges, selectedCategory])
 
   const categories = [
     { id: 'all', name: 'Alle', icon: '🎯' },
