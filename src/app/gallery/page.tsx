@@ -8,6 +8,10 @@ import ChallengesList from '@/components/ChallengesList'
 import ChallengeDetail from '@/components/ChallengeDetail'
 import { type Challenge } from '@/data/challenges'
 
+// Deaktiviere statisches Prerendering für diese Seite
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 interface UploadedFile {
   id: string
   fileName: string
@@ -599,9 +603,21 @@ function GalleryPageContent() {
   )
 }
 
+// Einfacher Fallback-Loader
+function GalleryFallback() {
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 via-amber-100 to-amber-200 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto mb-4"></div>
+        <p className="text-gray-600">Galerie wird geladen...</p>
+      </div>
+    </div>
+  )
+}
+
 export default function GalleryPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={<GalleryFallback />}>
       <GalleryPageContent />
     </Suspense>
   )
