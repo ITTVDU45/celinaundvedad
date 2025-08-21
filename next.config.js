@@ -3,6 +3,7 @@ const nextConfig = {
   // React Compiler deaktiviert für bessere Kompatibilität
   // Bilder von MinIO erlauben
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,11 +14,9 @@ const nextConfig = {
     ],
   },
   // Statisches Rendering für Vercel
-  output: 'standalone',
+  output: 'export',
   // Deaktiviere automatisches Prerendering für dynamische Routen
-  experimental: {
-    appDir: true,
-  },
+  trailingSlash: true,
 }
 
 module.exports = nextConfig

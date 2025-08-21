@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, type ChangeEvent, useEffect } from 'react'
+import { useState, useRef, type ChangeEvent, useEffect, Suspense } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -25,7 +25,7 @@ interface UploadedFile {
 
 type TabType = 'gallery' | 'challenges'
 
-export default function GalleryPage() {
+function GalleryPageContent() {
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [userName, setUserName] = useState<string>('')
@@ -596,5 +596,13 @@ export default function GalleryPage() {
         />
       </div>
     </div>
+  )
+}
+
+export default function GalleryPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <GalleryPageContent />
+    </Suspense>
   )
 }
