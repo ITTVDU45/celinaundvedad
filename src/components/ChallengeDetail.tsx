@@ -1,17 +1,48 @@
 'use client'
 
-import { useState, useRef, type ChangeEvent } from 'react'
+import { useState, useRef, useEffect, type ChangeEvent } from 'react'
 import { type Challenge } from '@/data/challenges'
 
 interface ChallengeDetailProps {
   challenge: Challenge
+  userName?: string
   onBack: () => void
   onPhotoUpload: (challengeId: string, file: File) => void
 }
 
-export default function ChallengeDetail({ challenge, onBack, onPhotoUpload }: ChallengeDetailProps) {
+export default function ChallengeDetail({ challenge, userName, onBack, onPhotoUpload }: ChallengeDetailProps) {
   const [showUploadModal, setShowUploadModal] = useState(false)
+  const [challengeFiles, setChallengeFiles] = useState<Array<{ id: string; preview: string; fileName: string }>>([])
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    // Lade die bereits hochgeladenen Fotos für diese Challenge, wenn userName vorhanden ist
+    if (!userName) return
+    loadChallengeFiles()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userName])
+
+  const loadChallengeFiles = async () => {
+    if (!userName) return
+    try {
+      setIsLoadingFiles(true)
+      const res = await fetch(`/api/files?userName=${encodeURIComponent(userName)}`)
+      if (!res.ok) {
+        setChallengeFiles([])
+        return
+      }
+      const data = await res.json()
+      const filesForChallenge = (data.files || []).filter((f: any) => f.challengeId === challenge.id)
+      setChallengeFiles(filesForChallenge.map((f: any) => ({ id: f.id || f.objectName || f.fileName, preview: f.preview, fileName: f.fileName })))
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Fehler beim Laden der Challenge-Fotos:', error)
+      setChallengeFiles([])
+    } finally {
+      setIsLoadingFiles(false)
+    }
+  }
 
   const handleFileSelect = (files: FileList | null) => {
     if (!files || files.length === 0) return
@@ -92,6 +123,24 @@ export default function ChallengeDetail({ challenge, onBack, onPhotoUpload }: Ch
               <p>Die Challenge wird als "erledigt" markiert</p>
             </div>
           </div>
+        </div>
+
+        {/* Bereits hochgeladene Fotos für diese Challenge */}
+        <div className="mb-6">
+          <h3 className="text-lg font-semibold text-gray-800 mb-3">Eingereichte Fotos</h3>
+          {isLoadingFiles ? (
+            <div className="text-sm text-gray-600">Lade Fotos...</div>
+          ) : challengeFiles.length === 0 ? (
+            <div className="text-sm text-gray-600">Noch keine Fotos für diese Challenge.</div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              {challengeFiles.map((f) => (
+                <a key={f.id} href={f.preview} target="_blank" rel="noreferrer" className="block w-full h-28 overflow-hidden rounded-md">
+                  <img src={f.preview} alt={f.fileName} className="w-full h-full object-cover" />
+                </a>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Upload Modal */}
