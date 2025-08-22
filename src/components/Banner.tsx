@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+// Verwende normales img als Fallback für zuverlässige Darstellung des lokalen Banners
 import { useRouter } from 'next/navigation'
 
 export default function Banner() {
@@ -25,15 +25,13 @@ export default function Banner() {
     <div className="relative h-screen w-full overflow-hidden">
       {/* Hintergrundbild */}
       <div className="absolute inset-0">
-        <Image
+        <img
           src="/cua.jpeg"
           alt="Celina und Vedad Banner"
-          fill
-          className="object-cover object-center md:object-center object-top"
-          priority
+          className="w-full h-full object-cover object-center md:object-center object-top"
         />
         {/* Overlay für bessere Lesbarkeit */}
-        <div className="absolute inset-0 bg-black/30" />
+        <div className="absolute inset-0 bg-black/20" />
       </div>
       
       {/* Content */}
