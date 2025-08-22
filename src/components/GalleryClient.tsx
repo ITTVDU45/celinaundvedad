@@ -51,11 +51,37 @@ export default function GalleryClient() {
 
     // Lade Fotos aus MinIO
     loadUserFiles()
-
-    // Lade abgeschlossene Challenges aus der API (später implementieren)
-    // Für jetzt: Leeres Array
-    setCompletedChallenges([])
+    // Lade abgeschlossene Challenges aus der API
+    loadUserMetadata()
   }, [userName])
+
+  // Load user metadata (completedChallenges)
+  const loadUserMetadata = async () => {
+    if (!userName) return
+    try {
+      const res = await fetch(`/api/user/metadata?userName=${encodeURIComponent(userName)}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data?.metadata?.completedChallenges && Array.isArray(data.metadata.completedChallenges)) {
+        setCompletedChallenges(data.metadata.completedChallenges)
+      }
+    } catch (error) {
+      console.error('Fehler beim Laden der User-Metadaten:', error)
+    }
+  }
+
+  const saveUserMetadata = async (metadata: Record<string, unknown>) => {
+    if (!userName) return
+    try {
+      await fetch('/api/user/metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userName, metadata })
+      })
+    } catch (error) {
+      console.error('Fehler beim Speichern der User-Metadaten:', error)
+    }
+  }
 
   // Lade Dateien aus MinIO
   const loadUserFiles = async () => {
@@ -221,8 +247,10 @@ export default function GalleryClient() {
 
           // Markiere die Challenge als abgeschlossen
           if (!completedChallenges.includes(challengeId)) {
-            setCompletedChallenges((prev: string[]) => [...prev, challengeId])
-            // TODO: Später in MinIO oder separate API speichern
+            const next = [...completedChallenges, challengeId]
+            setCompletedChallenges(next)
+            // Speichere persistiert in User-Metadaten
+            saveUserMetadata({ completedChallenges: next })
           }
         }
       }
@@ -359,11 +387,10 @@ export default function GalleryClient() {
               
               {/* Das eigentliche Bild */}
               <div className="relative w-full h-full rounded-full overflow-hidden">
-                <Image
-                  src="/CelinaundVedad.jpeg"
+                <img
+                  src="/cuua.png"
                   alt="Celina und Vedad"
-                  fill
-                  className="object-cover"
+                  className="w-full h-full object-cover"
                 />
               </div>
             </div>

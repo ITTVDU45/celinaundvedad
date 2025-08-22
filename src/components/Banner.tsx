@@ -26,7 +26,7 @@ export default function Banner() {
       {/* Hintergrundbild */}
       <div className="absolute inset-0">
         <img
-          src="/cua.jpeg"
+          src="/cuua.png"
           alt="Celina und Vedad Banner"
           className="w-full h-full object-cover object-center md:object-center object-top"
         />
