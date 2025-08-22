@@ -170,3 +170,37 @@ export async function deleteFile(objectName: string) {
     throw error
   }
 }
+
+// Persist simple user metadata JSON in MinIO at path: {userName}/metadata.json
+export async function saveUserMetadata(userName: string, metadata: Record<string, unknown>) {
+  try {
+    const client = getMinioClient()
+    const objectName = `${userName}/metadata.json`
+    const buffer = Buffer.from(JSON.stringify(metadata))
+    await client.putObject(BUCKET_NAME, objectName, buffer)
+    return true
+  } catch (error) {
+    console.error('Fehler beim Speichern der User-Metadaten:', error)
+    throw error
+  }
+}
+
+export async function loadUserMetadata(userName: string) {
+  try {
+    const client = getMinioClient()
+    const objectName = `${userName}/metadata.json`
+    const stream = await client.getObject(BUCKET_NAME, objectName)
+    // stream to string
+    const chunks: Buffer[] = []
+    for await (const chunk of stream) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk)
+    }
+    const content = Buffer.concat(chunks).toString('utf-8')
+    return JSON.parse(content)
+  } catch (error) {
+    // Wenn Datei nicht existiert, gib null zurück
+    // eslint-disable-next-line no-console
+    console.warn('Kein Metadata-Objekt gefunden für', userName, error)
+    return null
+  }
+}
