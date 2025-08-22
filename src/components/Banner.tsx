@@ -26,7 +26,7 @@ export default function Banner() {
       {/* Hintergrundbild */}
       <div className="absolute inset-0">
         <Image
-          src="/CelinaundVedad.jpeg"
+          src="/cua.jpeg"
           alt="Celina und Vedad Banner"
           fill
           className="object-cover object-center md:object-center object-top"
