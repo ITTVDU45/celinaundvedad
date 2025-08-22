@@ -6,11 +6,12 @@ import { type Challenge } from '@/data/challenges'
 interface ChallengeDetailProps {
   challenge: Challenge
   userName?: string
+  uploadedFiles?: Array<{ id?: string; preview: string; fileName: string; challengeId?: string }>
   onBack: () => void
   onPhotoUpload: (challengeId: string, file: File) => void
 }
 
-export default function ChallengeDetail({ challenge, userName, onBack, onPhotoUpload }: ChallengeDetailProps) {
+export default function ChallengeDetail({ challenge, userName, uploadedFiles, onBack, onPhotoUpload }: ChallengeDetailProps) {
   const [showUploadModal, setShowUploadModal] = useState(false)
   const [challengeFiles, setChallengeFiles] = useState<Array<{ id: string; preview: string; fileName: string }>>([])
   const [isLoadingFiles, setIsLoadingFiles] = useState(false)
@@ -18,6 +19,13 @@ export default function ChallengeDetail({ challenge, userName, onBack, onPhotoUp
 
   useEffect(() => {
     // Lade die bereits hochgeladenen Fotos für diese Challenge, wenn userName vorhanden ist
+    if (uploadedFiles && uploadedFiles.length > 0) {
+      // Wenn uploadedFiles per Prop übergeben wurden (z.B. aus GalleryClient), verwende diese
+      const filesForChallenge = uploadedFiles.filter((f) => f.challengeId === challenge.id)
+      setChallengeFiles(filesForChallenge.map((f) => ({ id: f.id || f.fileName, preview: f.preview, fileName: f.fileName })))
+      return
+    }
+
     if (!userName) return
     loadChallengeFiles()
     // eslint-disable-next-line react-hooks/exhaustive-deps

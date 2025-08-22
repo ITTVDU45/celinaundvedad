@@ -320,6 +320,8 @@ export default function GalleryClient() {
     return (
       <ChallengeDetail
         challenge={selectedChallenge}
+        userName={userName}
+        uploadedFiles={uploadedFiles}
         onBack={handleBackFromChallenge}
         onPhotoUpload={handleChallengePhotoUpload}
       />
