@@ -1,18 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { ensureBucketExists, generatePresignedUploadUrl, UPLOAD_CONFIG } from '@/lib/minio'
+import { ensureBucketExists, generateAdminPresignedUploadUrl, UPLOAD_CONFIG } from '@/lib/minio'
+import { cookies } from 'next/headers'
+
+export const runtime = 'nodejs'
 
 export async function POST(request: NextRequest) {
   try {
+    // Prüfe Admin-Authentifizierung
+    const cookieStore = await cookies()
+    const authRole = cookieStore.get('auth_role')?.value
+
+    if (authRole !== 'admin') {
+      return NextResponse.json(
+        { error: 'Nur Admins können Dateien hochladen' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
     console.log('Upload-Request Body:', body)
     
-    const { fileName, contentType, userName, challengeId } = body
+    const { fileName, contentType } = body
 
     // Validierung
-    if (!fileName || !contentType || !userName) {
-      console.log('Validierungsfehler:', { fileName, contentType, userName })
+    if (!fileName || !contentType) {
+      console.log('Validierungsfehler:', { fileName, contentType })
       return NextResponse.json(
-        { error: 'fileName, contentType und userName sind erforderlich' },
+        { error: 'fileName und contentType sind erforderlich' },
         { status: 400 }
       )
     }
@@ -34,19 +48,17 @@ export async function POST(request: NextRequest) {
     // Stelle sicher, dass der Bucket existiert
     await ensureBucketExists()
 
-    console.log('Bucket existiert, generiere Presigned URL...')
+    console.log('Bucket existiert, generiere Admin Presigned URL...')
 
-    // Generiere Presigned Upload URL (mit oder ohne Challenge-ID)
-    const { url, objectName } = await generatePresignedUploadUrl(fileName, contentType, userName, challengeId)
+    // Generiere Admin Presigned Upload URL
+    const { url, objectName } = await generateAdminPresignedUploadUrl(fileName, contentType)
 
-    console.log('Presigned URL generiert:', { objectName, isChallenge: !!challengeId })
+    console.log('Presigned URL generiert:', { objectName })
 
     return NextResponse.json({
       uploadUrl: url,
       objectName,
-      message: 'Upload-URL erfolgreich generiert',
-      isChallenge: !!challengeId,
-      challengeId: challengeId || null
+      message: 'Upload-URL erfolgreich generiert'
     })
 
   } catch (error) {

@@ -1,9 +1,9 @@
-import Banner from '@/components/Banner'
+import PinEntry from '@/components/PinEntry'
 
 export default function Home() {
   return (
     <main className="min-h-screen">
-      <Banner />
+      <PinEntry />
     </main>
   )
 }

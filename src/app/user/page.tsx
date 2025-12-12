@@ -1,12 +1,11 @@
 import { Suspense } from 'react'
-import GalleryClient from '@/components/GalleryClient'
+import UserGallery from '@/components/UserGallery'
 
-// Force dynamic runtime for this page (avoid prerender errors)
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
 export const runtime = 'nodejs'
 
-function GalleryFallback() {
+function LoadingFallback() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-amber-50 via-amber-100 to-amber-200 flex items-center justify-center">
       <div className="text-center">
@@ -17,10 +16,11 @@ function GalleryFallback() {
   )
 }
 
-export default function GalleryPage() {
+export default function UserPage() {
   return (
-    <Suspense fallback={<GalleryFallback />}>
-      <GalleryClient />
+    <Suspense fallback={<LoadingFallback />}>
+      <UserGallery />
     </Suspense>
   )
 }
+
